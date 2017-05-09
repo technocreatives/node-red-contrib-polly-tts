@@ -1,0 +1,33 @@
+{
+  "name": "node-red-contrib-polly-tts",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "/usr/bin/node ./index.js"
+  },
+  "author": "davidg@techocreatives.com",
+  "license": "ISC",
+  "keywords": [
+    "polly",
+    "tts",
+    "node-red"
+  ],
+  "node-red": {
+    "nodes": {
+      "polly-tts": "polly-tts/polly-tts.js"
+    }
+  },
+  "bugs": {
+    "url": "https://github.com/technocreatives/node-red-contrib-polly-tts/issues"
+  },
+  "homepage": "https://github.com/technocreatives/node-red-contrib-polly-tts#readme",
+  "dependencies": {
+    "aws-sdk": "^2.49.0",
+    "fs": "0.0.1-security",
+    "mkdirp": "^0.5.1",
+    "path": "^0.12.7",
+    "slug": "^0.9.1"
+  }
+}
