@@ -422,8 +422,7 @@ module.exports = function(RED) {
 
         // Try and create directory?
         if (!isDirSync(this.dir)) {
-
-            // If directory does not exist then create it
+            // If directory does not exist then create it?
         }
 
         this.config = RED.nodes.getNode(config.config);
@@ -439,10 +438,10 @@ module.exports = function(RED) {
                 roundtrip: 0
             };
 
-            msg.file = path.join(node.dir, slug(msg.payload) + '.mp3');
+            msg.file = path.join(node.dir, slug(msg.payload) + '_' + voice + '.mp3');
 
+            // Is cachced?
             checkIfFile(msg.file, function(err, isFile) {
-
                 if (err) {
                     node.error(err);
                     return;
@@ -484,8 +483,9 @@ module.exports = function(RED) {
                                     node.error(RED._(err.message));
                                     node.send([null, msg]);
                                     console.log(err);
+                                } else {
+                                    node.send([msg, null]);
                                 }
-                                node.send([msg, null]);
                             });
                             console.log(data);
                         }
