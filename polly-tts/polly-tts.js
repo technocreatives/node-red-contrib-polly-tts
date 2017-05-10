@@ -6,6 +6,8 @@ module.exports = function(RED) {
     var fs = require('fs');
     var path = require('path');
     var mkdirp = require('mkdirp');
+    var MD5 = require('crypto-js').MD5;
+    var util = require('util');
 
     AWS.config.update({
         region: 'us-east-1'
@@ -17,6 +19,8 @@ module.exports = function(RED) {
     slug.charmap[','] = '_pause_';
     slug.charmap[':'] = '_colon_';
     slug.charmap[';'] = '_semicolon_';
+    slug.charmap['<'] = '_less_';
+    slug.charmap['>'] = '_greater_';
 
     function isDirSync(aPath) {
         try {
@@ -45,7 +49,7 @@ module.exports = function(RED) {
                 if (err.code === 'ENOENT') {
                     return cb(null, false);
                 } else {
-                    return cb(null, err);
+                    throw e;
                 }
             }
             console.log(stats)
@@ -416,14 +420,18 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, config);
         var node = this;
 
-        // Set the voice
-        var voice = voices[config.voice].Id;
-        this.dir = config.dir;
 
+        this.dir = config.dir;
         // Try and create directory?
         if (!isDirSync(this.dir)) {
             // If directory does not exist then create it?
         }
+
+        // Set the voice
+        var voice = voices[config.voice].Id;
+
+        // Set ssml
+        this.ssml = config.ssml;
 
         this.config = RED.nodes.getNode(config.config);
         if (!this.config) {
@@ -438,72 +446,107 @@ module.exports = function(RED) {
                 roundtrip: 0
             };
 
-            msg.file = path.join(node.dir, slug(msg.payload) + '_' + voice + '.mp3');
+            var outputFormat = 'mp3'
+            
+            var filename = getFilename(msg.payload, voice, node.ssml, outputFormat)
 
-            // Is cachced?
+            // Store it
+            msg.file = path.join(node.dir, filename);
+
+            // Check if cached
             checkIfFile(msg.file, function(err, isFile) {
                 if (err) {
                     node.error(err);
                     return;
                 }
+
                 if (isFile) {
                     return node.send([msg, null]);
                 }
 
+                node.status({
+                    fill: 'yellow',
+                    shape: 'dot',
+                    text: 'requesting'
+                });
+
+                msg._polly.cached = false;
+                var started = Date.now();
+
                 try {
 
-                    var writeStream = fs.createWriteStream(msg.file);
-
-                    node.status({
-                        fill: 'yellow',
-                        shape: 'dot',
-                        text: 'requesting'
-                    });
-                    msg._polly.cached = false;
-                    var started = Date.now();
-
                     var params = {
-                        OutputFormat: "mp3",
+                        OutputFormat: outputFormat,
                         SampleRate: "8000",
                         Text: msg.payload,
-                        TextType: "text",
+                        TextType: node.ssml ?  'ssml'  : 'text',
                         VoiceId: voice
                     };
 
+                    // Synthesize the speech
                     node.config.polly.synthesizeSpeech(params, function(err, data) {
                         if (err) {
-                            msg.error = err.message
-                            node.error(RED._(err.message));
-                            node.send([null, msg]);
-                            console.log(err);
-                        } else {
-                            fs.writeFile(msg.file, data.AudioStream, function(err) {
-                                if (err) {
-                                    msg.error = err.message
-                                    node.error(RED._(err.message));
-                                    node.send([null, msg]);
-                                    console.log(err);
-                                } else {
-                                    node.send([msg, null]);
-                                }
-                            });
-                            console.log(data);
+                            notifyError(node, msg, err);
+                            return;
                         }
+
+                        // Save the file
+                        fs.writeFile(msg.file, data.AudioStream, function(err) {
+                            if (err) {
+                                notifyError(node, msg, err);
+                                return;
+                            } 
+
+                            node.send([msg, null]);
+
+                            node.status({});
+                        });
                     });
 
                 } catch (err) {
-                    node.error(RED._(err.message));
-                    msg.error = err.message;
-                    node.send([null, msg]);
+                    notifyError(node, msg, err);
                 }
-                node.status({});
+                
 
             });
         });
 
     }
 
+    function getFilename(text, voice, isSSML, extension){
+        // Slug the text.
+        var basename = slug(text);
+
+        var ssml_text = isSSML ? "_ssml" : "" 
+
+        // Filename format: "text_voice.mp3"
+        var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension)
+
+        // If filename is too long, cut it and add hash
+        if(filename.length > 255){
+            var hash = MD5(basename);
+
+            // Filename format: "text_hash_voice.mp3"
+            var ending = util.format('_%s_%s_%s.%s', hash, voice, ssml_text, extension);
+            var beginning = basename.slice(0, 255-ending.length);
+
+            filename = beginning + ending;
+        }
+
+        return filename;
+    }
+
     RED.nodes.registerType('polly', PollyNode);
 
+    function notifyError(node, msg, err){
+        node.status({
+            fill: 'red',
+            shape: 'dot',
+            text: 'error'
+        });
+        node.error(RED._(err.message));
+        msg.error = err.message
+        node.send([null, msg]);
+    }
 
 };
