@@ -27,7 +27,6 @@
     "aws-sdk": "^2.49.0",
     "crypto-js": "^3.1.9-1",
     "fs": "0.0.1-security",
-    "md5-es": "^1.7.0",
     "mkdirp": "^0.5.1",
     "path": "^0.12.7",
     "path-exists": "^3.0.0",

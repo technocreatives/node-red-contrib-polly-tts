@@ -4,10 +4,10 @@ module.exports = function(RED) {
     var AWS = require('aws-sdk');
     var slug = require('slug');
     var fs = require('fs');
-    var path = require('path');
     var mkdirp = require('mkdirp');
     var MD5 = require('crypto-js').MD5;
     var util = require('util');
+    var path = require('path');
     var pathExists = require('path-exists');
 
     AWS.config.update({
@@ -534,4 +534,4 @@ module.exports = function(RED) {
         msg.error = err.message
         node.send([null, msg]);
     }
-};
+}
