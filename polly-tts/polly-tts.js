@@ -389,7 +389,7 @@ module.exports = function(RED) {
             secretAccessKey: this.secretKey,
             apiVersion: '2016-06-10'
         }
-        this.polly_config = params;
+        this.polly = new AWS.Polly(params);
     }
 
     RED.nodes.registerType('polly-config', PollyConfigNode, {
@@ -433,6 +433,7 @@ module.exports = function(RED) {
                 roundtrip: 0
             };
 
+            var polly = node.config.polly;
             var outputFormat = 'mp3'
 
             var filename = getFilename(msg.payload, voice, node.ssml, outputFormat)
@@ -441,66 +442,60 @@ module.exports = function(RED) {
             msg.file = path.join(node.dir, filename);
 
             // Check if cached
-            pathExists(msg.file).then(exists => {
-                if (exists) {
-                    return node.send([msg, null]);
-                }
-
-                node.status({
-                    fill: 'yellow',
-                    shape: 'dot',
-                    text: 'requesting'
-                });
-
-                msg._polly.cached = false;
-                var started = Date.now();
-
-                var params = {
-                    OutputFormat: outputFormat,
-                    SampleRate: "8000",
-                    Text: msg.payload,
-                    TextType: node.ssml ? 'ssml' : 'text',
-                    VoiceId: voice
-                };
-
-                synthesizeSpeech(node.config.polly_config, params).then(data => {
-                    writeFile(msg.file, data.AudioStream).then( function() {
-                        console.log("Writing was successful")
-                        node.status({});
-                        node.send([msg, null]);
-
-                    }).catch(err => {
-                        // Error while saving file
-                        notifyError(node, msg, err);
+            pathExists(msg.file)
+                .then(exists => {
+                    if (exists) {
+                        return node.send([msg, null]);
+                    }
+                }, reason => {
+                    //Failed to resolve the path
+                    notifyError(node, msg, reason);
+                })
+                .then(function() {
+                    node.status({
+                        fill: 'yellow',
+                        shape: 'dot',
+                        text: 'requesting'
                     });
-                }).catch(err => {
-                    // Error while synthesizeSpeech
-                    notifyError(node, msg, err);
+
+                    msg._polly.cached = false;
+                    var started = Date.now();
+
+                    var params = {
+                        OutputFormat: outputFormat,
+                        SampleRate: "8000",
+                        Text: msg.payload,
+                        TextType: node.ssml ? 'ssml' : 'text',
+                        VoiceId: voice
+                    }
+
+                    return new Promise((resolve, reject) => {
+                        polly.synthesizeSpeech(params, function(err, data) {
+                            if (err !== null) return reject(err);
+                            resolve(data);
+                        });
+                    });
+                }, reason => {
+                    //Failed to synthesize speech
+                    notifyError(node, msg, reason);
+                })
+                .then(data => {
+                    return new Promise((resolve, reject) => {
+                        fs.writeFile(msg.file, data, function(err) {
+                            if (err !== null) return reject(err);
+                            resolve();
+                        });
+                    });
+                }, reason => {
+                    // Failed the writing the file
+                    notifyError(node, msg, reason);
+                })
+                .then(function() {
+                    // Success
+                    msg._polly.roundtrip = Date.now() - started;
+                    node.status({});
+                    node.send([msg, null]);
                 });
-            }).catch(err => {
-                // Path exist failed
-                notifyError(node, msg, err);
-            });
-        });
-
-    }
-
-    function synthesizeSpeech(config, params) {
-        return new Promise((resolve, reject) => {
-            var polly = new AWS.Polly(config);
-            polly.synthesizeSpeech(params, function(err, data) {
-                if (err !== null) return reject(err);
-                resolve(data);
-            });
-        });
-    }
-
-    function writeFile(path, data) {
-        return new Promise((resolve, reject) => {
-            fs.writeFile(path, data, function(err) {
-                if (err !== null) return reject(err);
-                resolve();
-            });
         });
     }
 
@@ -539,5 +534,4 @@ module.exports = function(RED) {
         msg.error = err.message
         node.send([null, msg]);
     }
-
 };
