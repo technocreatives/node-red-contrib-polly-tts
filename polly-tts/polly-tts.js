@@ -8,6 +8,7 @@ module.exports = function(RED) {
     var mkdirp = require('mkdirp');
     var MD5 = require('crypto-js').MD5;
     var util = require('util');
+    var pathExists = require('path-exists');
 
     AWS.config.update({
         region: 'us-east-1'
@@ -41,20 +42,6 @@ module.exports = function(RED) {
                 throw e;
             }
         }
-    }
-
-    function checkIfFile(file, cb) {
-        fs.stat(file, function fsStat(err, stats) {
-            if (err) {
-                if (err.code === 'ENOENT') {
-                    return cb(null, false);
-                } else {
-                    throw e;
-                }
-            }
-            console.log(stats)
-            return cb(null, stats.isFile());
-        });
     }
 
     var voices = {
@@ -402,7 +389,7 @@ module.exports = function(RED) {
             secretAccessKey: this.secretKey,
             apiVersion: '2016-06-10'
         }
-        this.polly = new AWS.Polly(params);
+        this.polly_config = params;
     }
 
     RED.nodes.registerType('polly-config', PollyConfigNode, {
@@ -447,20 +434,15 @@ module.exports = function(RED) {
             };
 
             var outputFormat = 'mp3'
-            
+
             var filename = getFilename(msg.payload, voice, node.ssml, outputFormat)
 
             // Store it
             msg.file = path.join(node.dir, filename);
 
             // Check if cached
-            checkIfFile(msg.file, function(err, isFile) {
-                if (err) {
-                    node.error(err);
-                    return;
-                }
-
-                if (isFile) {
+            pathExists(msg.file).then(exists => {
+                if (exists) {
                     return node.send([msg, null]);
                 }
 
@@ -473,62 +455,71 @@ module.exports = function(RED) {
                 msg._polly.cached = false;
                 var started = Date.now();
 
-                try {
+                var params = {
+                    OutputFormat: outputFormat,
+                    SampleRate: "8000",
+                    Text: msg.payload,
+                    TextType: node.ssml ? 'ssml' : 'text',
+                    VoiceId: voice
+                };
 
-                    var params = {
-                        OutputFormat: outputFormat,
-                        SampleRate: "8000",
-                        Text: msg.payload,
-                        TextType: node.ssml ?  'ssml'  : 'text',
-                        VoiceId: voice
-                    };
+                synthesizeSpeech(node.config.polly_config, params).then(data => {
+                    writeFile(msg.file, data.AudioStream).then( function() {
+                        console.log("Writing was successful")
+                        node.status({});
+                        node.send([msg, null]);
 
-                    // Synthesize the speech
-                    node.config.polly.synthesizeSpeech(params, function(err, data) {
-                        if (err) {
-                            notifyError(node, msg, err);
-                            return;
-                        }
-
-                        // Save the file
-                        fs.writeFile(msg.file, data.AudioStream, function(err) {
-                            if (err) {
-                                notifyError(node, msg, err);
-                                return;
-                            } 
-
-                            node.send([msg, null]);
-
-                            node.status({});
-                        });
+                    }).catch(err => {
+                        // Error while saving file
+                        notifyError(node, msg, err);
                     });
-
-                } catch (err) {
+                }).catch(err => {
+                    // Error while synthesizeSpeech
                     notifyError(node, msg, err);
-                }
-                
-
+                });
+            }).catch(err => {
+                // Path exist failed
+                notifyError(node, msg, err);
             });
         });
 
     }
 
-    function getFilename(text, voice, isSSML, extension){
+    function synthesizeSpeech(config, params) {
+        return new Promise((resolve, reject) => {
+            var polly = new AWS.Polly(config);
+            polly.synthesizeSpeech(params, function(err, data) {
+                if (err !== null) return reject(err);
+                resolve(data);
+            });
+        });
+    }
+
+    function writeFile(path, data) {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(path, data, function(err) {
+                if (err !== null) return reject(err);
+                resolve();
+            });
+        });
+    }
+
+    function getFilename(text, voice, isSSML, extension) {
         // Slug the text.
         var basename = slug(text);
 
-        var ssml_text = isSSML ? "_ssml" : "" 
+        var ssml_text = isSSML ? "_ssml" : ""
 
         // Filename format: "text_voice.mp3"
         var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension)
 
         // If filename is too long, cut it and add hash
-        if(filename.length > 255){
+        if (filename.length > 255) {
             var hash = MD5(basename);
 
             // Filename format: "text_hash_voice.mp3"
             var ending = util.format('_%s_%s_%s.%s', hash, voice, ssml_text, extension);
-            var beginning = basename.slice(0, 255-ending.length);
+            var beginning = basename.slice(0, 255 - ending.length);
 
             filename = beginning + ending;
         }
@@ -538,7 +529,7 @@ module.exports = function(RED) {
 
     RED.nodes.registerType('polly', PollyNode);
 
-    function notifyError(node, msg, err){
+    function notifyError(node, msg, err) {
         node.status({
             fill: 'red',
             shape: 'dot',
