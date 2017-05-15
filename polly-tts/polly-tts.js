@@ -472,7 +472,7 @@ module.exports = function(RED) {
                     return new Promise((resolve, reject) => {
                         polly.synthesizeSpeech(params, function(err, data) {
                             if (err !== null) return reject(err);
-                            resolve(data);
+                            resolve(data.AudioStream);
                         });
                     });
                 }, reason => {
