@@ -438,6 +438,9 @@ module.exports = function(RED) {
 
             var filename = getFilename(msg.payload, voice, node.ssml, outputFormat)
 
+            var started = Date.now();
+
+
             // Store it
             msg.file = path.join(node.dir, filename);
 
@@ -459,7 +462,6 @@ module.exports = function(RED) {
                     });
 
                     msg._polly.cached = false;
-                    var started = Date.now();
 
                     var params = {
                         OutputFormat: outputFormat,
