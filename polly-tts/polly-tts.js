@@ -466,41 +466,42 @@ module.exports = function(RED) {
                             TextType: node.ssml ? 'ssml' : 'text',
                             VoiceId: voice
                         }
-                        Promise.resolve(synthesizeSpeech(), reason => {
+                        Promise.resolve(synthesizeSpeech([polly, params]), reason => {
                                 // Failed the caching the file
                                 notifyError(node, msg, reason);
-                        })
-                            .then(cacheSpeech(), reason => {
-                                // Failed the caching the file
-                                notifyError(node, msg, reason);
-                            }).then({
-                                // Success
-                                msg._polly.roundtrip = Date.now() - started;
-                                node.status({});
-                                node.send([msg, null]);
-                            });
+                        }).then(data => {
+                            return [msg.file, data.AudioStream];
+                        }).then(cacheSpeech, reason => {
+                            // Failed the caching the file
+                            notifyError(node, msg, reason);
+                        }).then(done => {
+                            // Success
+                            msg._polly.roundtrip = Date.now() - started;
+                            node.status({});
+                            node.send([msg, null]);
+                        });
                     }
+            });
         });
     }
-    
-    function synthesizeSpeech(params){
+
+    function synthesizeSpeech([polly, params]){
         return new Promise((resolve, reject) => {
             polly.synthesizeSpeech(params, function(err, data) {
                 if (err !== null) return reject(err);
-                    resolve(data.AudioStream);
+                    resolve(data);
                 });
             });
     }
 
-    function cacheSpeech(){
+    function cacheSpeech([path, data]){
         return new Promise((resolve, reject) => {
-            fs.writeFile(msg.file, data, function(err) {
+            fs.writeFile(path, data, function(err) {
                 if (err !== null) return reject(err);
                 resolve();
             });
         });
     }
-
 
     function getFilename(text, voice, isSSML, extension) {
         // Slug the text.
