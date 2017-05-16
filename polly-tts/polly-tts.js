@@ -388,7 +388,7 @@ module.exports = function(RED) {
             accessKeyId: this.accessKey,
             secretAccessKey: this.secretKey,
             apiVersion: '2016-06-10'
-        }
+        };
         this.polly = new AWS.Polly(params);
     }
 
@@ -434,9 +434,9 @@ module.exports = function(RED) {
             };
 
             var polly = node.config.polly;
-            var outputFormat = 'mp3'
+            var outputFormat = 'mp3';
 
-            var filename = getFilename(msg.payload, voice, node.ssml, outputFormat)
+            var filename = getFilename(msg.payload, voice, node.ssml, outputFormat);
 
             // Store it
             msg.file = path.join(node.dir, filename);
@@ -465,7 +465,7 @@ module.exports = function(RED) {
                             Text: msg.payload,
                             TextType: node.ssml ? 'ssml' : 'text',
                             VoiceId: voice
-                        }
+                        };
                         Promise.resolve(synthesizeSpeech([polly, params]), reason => {
                                 // Failed the caching the file
                                 notifyError(node, msg, reason);
@@ -507,10 +507,10 @@ module.exports = function(RED) {
         // Slug the text.
         var basename = slug(text);
 
-        var ssml_text = isSSML ? "_ssml" : ""
+        var ssml_text = isSSML ? "_ssml" : "";
 
         // Filename format: "text_voice.mp3"
-        var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension)
+        var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension);
 
         // If filename is too long, cut it and add hash
         if (filename.length > 255) {
@@ -535,7 +535,7 @@ module.exports = function(RED) {
             text: 'error'
         });
         node.error(RED._(err.message));
-        msg.error = err.message
+        msg.error = err.message;
         node.send([null, msg]);
     }
 }
