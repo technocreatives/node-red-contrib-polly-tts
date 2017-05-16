@@ -422,7 +422,7 @@ module.exports = function(RED) {
 
         this.config = RED.nodes.getNode(config.config);
         if (!this.config) {
-            this.error(red._('missing polly config'));
+            this.error(RED._('missing polly config'));
             return;
         }
 
@@ -447,51 +447,53 @@ module.exports = function(RED) {
                     if (cached) {
                         // Cached
                         return node.send([msg, null]);
-                    } else {
+                    } 
 
-                        // Not cached
-                        node.status({
-                            fill: 'yellow',
-                            shape: 'dot',
-                            text: 'requesting'
-                        });
+                    // Not cached
+                    node.status({
+                        fill: 'yellow',
+                        shape: 'dot',
+                        text: 'requesting'
+                    });
 
-                        msg._polly.cached = false;
-                        var started = Date.now();
+                    msg._polly.cached = false;
+                    var started = Date.now();
 
-                        var params = {
-                            OutputFormat: outputFormat,
-                            SampleRate: "8000",
-                            Text: msg.payload,
-                            TextType: node.ssml ? 'ssml' : 'text',
-                            VoiceId: voice
-                        };
-                        Promise.resolve(synthesizeSpeech([polly, params]), reason => {
-                                // Failed the caching the file
-                                notifyError(node, msg, reason);
-                        }).then(data => {
-                            return [msg.file, data.AudioStream];
-                        }).then(cacheSpeech, reason => {
+                    var params = {
+                        OutputFormat: outputFormat,
+                        SampleRate: '8000',
+                        Text: msg.payload,
+                        TextType: node.ssml ? 'ssml' : 'text',
+                        VoiceId: voice
+                    };
+                    Promise.resolve(synthesizeSpeech([polly, params]), reason => {
                             // Failed the caching the file
-                            notifyError(node, msg, reason);
-                        }).then(done => {
-                            // Success
-                            msg._polly.roundtrip = Date.now() - started;
-                            node.status({});
-                            node.send([msg, null]);
-                        });
-                    }
-            });
+                        notifyError(node, msg, reason);
+                    }).then(data => {
+                        return [msg.file, data.AudioStream];
+                    }).then(cacheSpeech, reason => {
+                        // Failed the caching the file
+                        notifyError(node, msg, reason);
+                    }).then(function(){
+                        // Success
+                        msg._polly.roundtrip = Date.now() - started;
+                        node.status({});
+                        node.send([msg, null]);
+                    });
+                });
         });
     }
 
     function synthesizeSpeech([polly, params]){
         return new Promise((resolve, reject) => {
             polly.synthesizeSpeech(params, function(err, data) {
-                if (err !== null) return reject(err);
-                    resolve(data);
-                });
+                if (err !== null) {
+                    return reject(err);
+                }
+
+                resolve(data);
             });
+        });
     }
 
     function cacheSpeech([path, data]){
@@ -507,7 +509,7 @@ module.exports = function(RED) {
         // Slug the text.
         var basename = slug(text);
 
-        var ssml_text = isSSML ? "_ssml" : "";
+        var ssml_text = isSSML ? '_ssml' : '';
 
         // Filename format: "text_voice.mp3"
         var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension);
@@ -538,4 +540,4 @@ module.exports = function(RED) {
         msg.error = err.message;
         node.send([null, msg]);
     }
-}
+};
