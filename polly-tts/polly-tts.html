@@ -1,216 +1,558 @@
-<!-- CONFIG -->
+module.exports = function(RED) {
+    'use strict';
 
-<script type="text/x-red" data-template-name="polly-config">
+    var AWS = require('aws-sdk');
+    var slug = require('slug');
+    var fs = require('fs');
+    var mkdirp = require('mkdirp');
+    var MD5 = require('crypto-js').MD5;
+    var util = require('util');
+    var path = require('path');
+    var pathExists = require('path-exists');
+	var mustache = require("mustache");
 
-    <div class="form-row">
-        <label for="node-config-input-name"><i class="fa fa-user"></i> Name</label>
-        <input type="text" id="node-config-input-name">
-    </div>
+    AWS.config.update({
+        region: 'us-east-1'
+    });
 
-    <div class="form-row">
-        <label for="node-config-input-accessKey"><i class="fa fa-user"></i> Access key</label>
-        <input type="text" id="node-config-input-accessKey">
-    </div>
-    <div class="form-row">
-        <label for="node-config-input-secretKey"><i class="fa fa-user"></i> Secret key</label>
-        <input type="password" id="node-config-input-secretKey">
-    </div>
-</script>
+    slug.charmap['.'] = '_stop_';
+    slug.charmap['?'] = '_qm_';
+    slug.charmap['!'] = '_em_';
+    slug.charmap[','] = '_pause_';
+    slug.charmap[':'] = '_colon_';
+    slug.charmap[';'] = '_semicolon_';
+    slug.charmap['<'] = '_less_';
+    slug.charmap['>'] = '_greater_';
 
-<script type="text/javascript">
-    RED.nodes.registerType('polly-config',
-    {
-        category: 'config',
-        defaults:
-        {
-            name:
-            {
-                value: ""
+    function isDirSync(aPath) {
+        try {
+            return fs.statSync(aPath).isDirectory();
+        } catch (e) {
+            if (e.code === 'ENOENT') {
+                mkdirp(aPath, function(err) {
+                    if (err) {
+                        this.error(RED._(err));
+                    } else {
+                        console.log('Created directory path: ', aPath);
+                    }
+                });
+                return false;
+            } else if (e.code === 'EACCES') {
+                return false;
+            } else {
+                throw e;
             }
+        }
+    }
+
+    var voices = {
+        '0': {
+            Gender: 'Female',
+            Id: 'Joanna',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Joanna'
         },
-        credentials:
-        {
-            accessKey:
-            {
+        '1': {
+            Gender: 'Female',
+            Id: 'Mizuki',
+            LanguageCode: 'ja-JP',
+            LanguageName: 'Japanese',
+            Name: 'Mizuki'
+        },
+        '2': {
+            Gender: 'Female',
+            Id: 'Filiz',
+            LanguageCode: 'tr-TR',
+            LanguageName: 'Turkish',
+            Name: 'Filiz'
+        },
+        '3': {
+            Gender: 'Female',
+            Id: 'Astrid',
+            LanguageCode: 'sv-SE',
+            LanguageName: 'Swedish',
+            Name: 'Astrid'
+        },
+        '4': {
+            Gender: 'Male',
+            Id: 'Maxim',
+            LanguageCode: 'ru-RU',
+            LanguageName: 'Russian',
+            Name: 'Maxim'
+        },
+        '5': {
+            Gender: 'Female',
+            Id: 'Tatyana',
+            LanguageCode: 'ru-RU',
+            LanguageName: 'Russian',
+            Name: 'Tatyana'
+        },
+        '6': {
+            Gender: 'Female',
+            Id: 'Carmen',
+            LanguageCode: 'ro-RO',
+            LanguageName: 'Romanian',
+            Name: 'Carmen'
+        },
+        '7': {
+            Gender: 'Female',
+            Id: 'Ines',
+            LanguageCode: 'pt-PT',
+            LanguageName: 'Portuguese',
+            Name: 'InÃªs'
+        },
+        '8': {
+            Gender: 'Male',
+            Id: 'Cristiano',
+            LanguageCode: 'pt-PT',
+            LanguageName: 'Portuguese',
+            Name: 'Cristiano'
+        },
+        '9': {
+            Gender: 'Female',
+            Id: 'Vitoria',
+            LanguageCode: 'pt-BR',
+            LanguageName: 'Brazilian Portuguese',
+            Name: 'VitÃ³ria'
+        },
+        '10': {
+            Gender: 'Male',
+            Id: 'Ricardo',
+            LanguageCode: 'pt-BR',
+            LanguageName: 'Brazilian Portuguese',
+            Name: 'Ricardo'
+        },
+        '11': {
+            Gender: 'Female',
+            Id: 'Maja',
+            LanguageCode: 'pl-PL',
+            LanguageName: 'Polish',
+            Name: 'Maja'
+        },
+        '12': {
+            Gender: 'Male',
+            Id: 'Jan',
+            LanguageCode: 'pl-PL',
+            LanguageName: 'Polish',
+            Name: 'Jan'
+        },
+        '13': {
+            Gender: 'Female',
+            Id: 'Ewa',
+            LanguageCode: 'pl-PL',
+            LanguageName: 'Polish',
+            Name: 'Ewa'
+        },
+        '14': {
+            Gender: 'Male',
+            Id: 'Ruben',
+            LanguageCode: 'nl-NL',
+            LanguageName: 'Dutch',
+            Name: 'Ruben'
+        },
+        '15': {
+            Gender: 'Female',
+            Id: 'Lotte',
+            LanguageCode: 'nl-NL',
+            LanguageName: 'Dutch',
+            Name: 'Lotte'
+        },
+        '16': {
+            Gender: 'Female',
+            Id: 'Liv',
+            LanguageCode: 'nb-NO',
+            LanguageName: 'Norwegian',
+            Name: 'Liv'
+        },
+        '17': {
+            Gender: 'Male',
+            Id: 'Giorgio',
+            LanguageCode: 'it-IT',
+            LanguageName: 'Italian',
+            Name: 'Giorgio'
+        },
+        '18': {
+            Gender: 'Female',
+            Id: 'Carla',
+            LanguageCode: 'it-IT',
+            LanguageName: 'Italian',
+            Name: 'Carla'
+        },
+        '19': {
+            Gender: 'Male',
+            Id: 'Karl',
+            LanguageCode: 'is-IS',
+            LanguageName: 'Icelandic',
+            Name: 'Karl'
+        },
+        '20': {
+            Gender: 'Female',
+            Id: 'Dora',
+            LanguageCode: 'is-IS',
+            LanguageName: 'Icelandic',
+            Name: 'DÃ³ra'
+        },
+        '21': {
+            Gender: 'Male',
+            Id: 'Mathieu',
+            LanguageCode: 'fr-FR',
+            LanguageName: 'French',
+            Name: 'Mathieu'
+        },
+        '22': {
+            Gender: 'Female',
+            Id: 'Celine',
+            LanguageCode: 'fr-FR',
+            LanguageName: 'French',
+            Name: 'CÃ©line'
+        },
+        '23': {
+            Gender: 'Female',
+            Id: 'Chantal',
+            LanguageCode: 'fr-CA',
+            LanguageName: 'Canadian French',
+            Name: 'Chantal'
+        },
+        '24': {
+            Gender: 'Female',
+            Id: 'Penelope',
+            LanguageCode: 'es-US',
+            LanguageName: 'US Spanish',
+            Name: 'PenÃ©lope'
+        },
+        '25': {
+            Gender: 'Male',
+            Id: 'Miguel',
+            LanguageCode: 'es-US',
+            LanguageName: 'US Spanish',
+            Name: 'Miguel'
+        },
+        '26': {
+            Gender: 'Male',
+            Id: 'Enrique',
+            LanguageCode: 'es-ES',
+            LanguageName: 'Castilian Spanish',
+            Name: 'Enrique'
+        },
+        '27': {
+            Gender: 'Female',
+            Id: 'Conchita',
+            LanguageCode: 'es-ES',
+            LanguageName: 'Castilian Spanish',
+            Name: 'Conchita'
+        },
+        '28': {
+            Gender: 'Male',
+            Id: 'Geraint',
+            LanguageCode: 'en-GB-WLS',
+            LanguageName: 'Welsh English',
+            Name: 'Geraint'
+        },
+        '29': {
+            Gender: 'Female',
+            Id: 'Salli',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Salli'
+        },
+        '30': {
+            Gender: 'Female',
+            Id: 'Kimberly',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Kimberly'
+        },
+        '31': {
+            Gender: 'Female',
+            Id: 'Kendra',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Kendra'
+        },
+        '32': {
+            Gender: 'Male',
+            Id: 'Justin',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Justin'
+        },
+        '33': {
+            Gender: 'Male',
+            Id: 'Joey',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Joey'
+        },
+        '34': {
+            Gender: 'Female',
+            Id: 'Ivy',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Ivy'
+        },
+        '35': {
+            Gender: 'Female',
+            Id: 'Raveena',
+            LanguageCode: 'en-IN',
+            LanguageName: 'Indian English',
+            Name: 'Raveena'
+        },
+        '36': {
+            Gender: 'Female',
+            Id: 'Emma',
+            LanguageCode: 'en-GB',
+            LanguageName: 'British English',
+            Name: 'Emma'
+        },
+        '37': {
+            Gender: 'Male',
+            Id: 'Brian',
+            LanguageCode: 'en-GB',
+            LanguageName: 'British English',
+            Name: 'Brian'
+        },
+        '38': {
+            Gender: 'Female',
+            Id: 'Amy',
+            LanguageCode: 'en-GB',
+            LanguageName: 'British English',
+            Name: 'Amy'
+        },
+        '39': {
+            Gender: 'Male',
+            Id: 'Russell',
+            LanguageCode: 'en-AU',
+            LanguageName: 'Australian English',
+            Name: 'Russell'
+        },
+        '40': {
+            Gender: 'Female',
+            Id: 'Nicole',
+            LanguageCode: 'en-AU',
+            LanguageName: 'Australian English',
+            Name: 'Nicole'
+        },
+        '41': {
+            Gender: 'Female',
+            Id: 'Marlene',
+            LanguageCode: 'de-DE',
+            LanguageName: 'German',
+            Name: 'Marlene'
+        },
+        '42': {
+            Gender: 'Male',
+            Id: 'Hans',
+            LanguageCode: 'de-DE',
+            LanguageName: 'German',
+            Name: 'Hans'
+        },
+        '43': {
+            Gender: 'Female',
+            Id: 'Naja',
+            LanguageCode: 'da-DK',
+            LanguageName: 'Danish',
+            Name: 'Naja'
+        },
+        '44': {
+            Gender: 'Male',
+            Id: 'Mads',
+            LanguageCode: 'da-DK',
+            LanguageName: 'Danish',
+            Name: 'Mads'
+        },
+        '45': {
+            Gender: 'Female',
+            Id: 'Gwyneth',
+            LanguageCode: 'cy-GB',
+            LanguageName: 'Welsh',
+            Name: 'Gwyneth'
+        },
+        '46': {
+            Gender: 'Male',
+            Id: 'Jacek',
+            LanguageCode: 'pl-PL',
+            LanguageName: 'Polish',
+            Name: 'Jacek'
+        }
+    };
+
+    function PollyConfigNode(config) {
+        RED.nodes.createNode(this, config);
+
+        if (this.credentials) {
+            this.accessKey = this.credentials.accessKey;
+            this.secretKey = this.credentials.secretKey;
+        }
+
+        var params = {
+            accessKeyId: this.accessKey,
+            secretAccessKey: this.secretKey,
+            apiVersion: '2016-06-10'
+        }
+        this.polly = new AWS.Polly(params);
+    }
+
+    RED.nodes.registerType('polly-config', PollyConfigNode, {
+        credentials: {
+            accessKey: {
                 type: 'text'
             },
-            secretKey:
-            {
+            secretKey: {
                 type: 'password'
             }
-        },
-        label: function()
-        {
-            return this.name || "";
         }
     });
-</script>
 
+    function PollyNode(config) {
+        RED.nodes.createNode(this, config);
+        var node = this;
 
-<!-- IVONA -->
-
-<script type="text/x-red" data-template-name="polly">
-    <div class="form-row">
-        <label for="node-input-config"><i class="fa fa-globe"></i> Configuration</label>
-        <input type="text" id="node-input-config">
-    </div>
-	
-	<div class="form-row node-text-editor-row">
-        <label for="node-input-message-editor"><i class="fa fa-file-code-o"></i> Message</label>
-        <input id="node-input-message" type="hidden">
-        <div style="height: 150px;" class="node-text-editor" id="node-input-message-editor" ></div>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-voice"><i class="icon-tag"></i> Voice</label>
-        <select id="node-input-voice">
-            <option value='0'>Joanna (en-US)</option>
-            <option value='1'>Mizuki (ja-JP)</option>
-            <option value='2'>Filiz (tr-TR)</option>
-            <option value='3'>Astrid (sv-SE)</option>
-            <option value='4'>Maxim (ru-RU)</option>
-            <option value='5'>Tatyana (ru-RU)</option>
-            <option value='6'>Carmen (ro-RO)</option>
-            <option value='7'>Ines (pt-PT)</option>
-            <option value='8'>Cristiano (pt-PT)</option>
-            <option value='9'>Vitoria (pt-BR)</option>
-            <option value='10'>Ricardo (pt-BR)</option>
-            <option value='11'>Maja (pl-PL)</option>
-            <option value='12'>Jan (pl-PL)</option>
-            <option value='13'>Ewa (pl-PL)</option>
-            <option value='14'>Ruben (nl-NL)</option>
-            <option value='15'>Lotte (nl-NL)</option>
-            <option value='16'>Liv (nb-NO)</option>
-            <option value='17'>Giorgio (it-IT)</option>
-            <option value='18'>Carla (it-IT)</option>
-            <option value='19'>Karl (is-IS)</option>
-            <option value='20'>Dora (is-IS)</option>
-            <option value='21'>Mathieu (fr-FR)</option>
-            <option value='22'>Celine (fr-FR)</option>
-            <option value='23'>Chantal (fr-CA)</option>
-            <option value='24'>Penelope (es-US)</option>
-            <option value='25'>Miguel (es-US)</option>
-            <option value='26'>Enrique (es-ES)</option>
-            <option value='27'>Conchita (es-ES)</option>
-            <option value='28'>Geraint (en-GBLS)</option>
-            <option value='29'>Salli (en-US)</option>
-            <option value='30'>Kimberly (en-US)</option>
-            <option value='31'>Kendra (en-US)</option>
-            <option value='32'>Justin (en-US)</option>
-            <option value='33'>Joey (en-US)</option>
-            <option value='34'>Ivy (en-US)</option>
-            <option value='35'>Raveena (en-IN)</option>
-            <option value='36'>Emma (en-GB)</option>
-            <option value='37'>Brian (en-GB)</option>
-            <option value='38'>Amy (en-GB)</option>
-            <option value='39'>Russell (en-AU)</option>
-            <option value='40'>Nicole (en-AU)</option>
-            <option value='41'>Marlene (de-DE)</option>
-            <option value='42'>Hans (de-DE)</option>
-            <option value='43'>Naja (da-DK)</option>
-            <option value='44'>Mads (da-DK)</option>
-            <option value='45'>Gwyneth (cy-GB)</option>
-            <option value='46'>Jacek (pl-PL)</option>
-        </select>
-    </div>
-    <div class="form-row">
-        <label></label>
-        <input type="checkbox" id="node-input-ssml" style="margin-left: 0px; vertical-align: top; width: auto !important;"> <label style="width:auto !important;"> Enable SSML</label>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-dir"><i class="fa fa-globe"></i> Cache dir</label>
-        <input type="text" id="node-input-dir">
-    </div>
-</script>
-
-<script type="text/x-red" data-help-name="polly">
-
-    <p>
-        <a href="https://aws.amazon.com/polly/">Polly</a> TTS api node.
-    </p>
-    <p>
-        <pre>msg.payload</pre> will be converted to an mp3 file and stored to file
-        system. The file path is indicated at <pre>msg.file</pre>
-    </p>
-    <p>
-        If the <pre>msg.payload</pre> has already been converted, no rountrip to
-        Polly server will be made.
-    </p>
-    <p>
-        The <pre>msg._polly</pre> objects contains aditional information about
-        the operation.
-        <ul style="font-size: 12px;">
-            <li><i>cached</i> - true if no roundtrip was performed, false otherwise.</li>
-            <li><i>roundtrip</i> - The time in ms for the server request.</li>
-        </ul>
-    </p>
-
-</script>
-
-<script type="text/javascript">
-    RED.nodes.registerType('polly',
-    {
-        category: 'advanced',
-        color: '#2388E7',
-        defaults:
-        {
-            name:
-            {
-                value: ""
-            },
-			message:
-            {
-                value: "{{payload}}",
-                required: true
-            },
-            voice:
-            {
-                value: "0",
-                required: true
-            },
-            ssml:
-            {
-                value: false,
-                required: true
-            },
-            dir:
-            {
-                value: "/tmp/{{voice_name}}-{{lang}}-{{slug}}.mp3",
-                required: true
-            },
-            config:
-            {
-                type: "polly-config",
-                required: true
-            }
-        },
-        inputs: 1,
-        outputs: 2,
-        icon: "polly.png",
-        label: function()
-        {
-            return this.name || "polly";
-        },
-        oneditprepare: function() {
-            var that = this;
-            this.editor = RED.editor.createEditor({
-                id:    'node-input-message-editor',
-                mode:  'ace/mode/html',
-                value: $("#node-input-message").val()
-            });
-            RED.library.create({
-                url:    "functions", // where to get the data from
-                type:   "function",  // the type of object the library is for
-                editor: that.editor, // the field name the main text body goes to
-                fields: ['name','outputs']
-            });
-            this.editor.focus();
-
-        },
-        oneditsave: function() {
-            $("#node-input-message").val(this.editor.getValue())
-            delete this.editor;
+        this.dir = config.dir;
+		this.filename = config.filename;
+        this.message = config.message;
+		this.voice = config.voice;
+		
+        // Try and create directory?
+        if (!isDirSync(this.dir)) {
+            // If directory does not exist then create it?
         }
-    });
-</script>
+
+        // Set the voice
+        var voiceId = voices[config.voice].Id;
+
+        // Set ssml
+        this.ssml = config.ssml;
+
+        this.config = RED.nodes.getNode(config.config);
+        if (!this.config) {
+            this.error(red._('missing polly config'));
+            return;
+        }
+
+        this.on('input', function(msg) {
+
+            msg._polly = {
+                cached: true,
+                roundtrip: 0
+            };
+
+            var polly = node.config.polly;
+			
+			var ref, key, value;
+			ref = voices[node.voice];
+			for (key in ref) {
+				value = ref[key];
+				msg["voice_" + key.toLowerCase()] = slug(value, '-');
+			}
+			
+            //var filename = getFilename(msg.payload, voice, node.ssml, outputFormat)
+            var dir = mustache.render(node.dir, msg).toLowerCase();
+            var filename = mustache.render(node.filename, msg).toLowerCase();
+			var text = mustache.render(node.message, msg);
+			var outputFormat = filename.split(".").pop();;
+			
+			msg.slug = slug("" + text);
+			//msg.voice_id = slug("" + text);
+            // Store it
+            msg.file = path.join(node.dir, filename);
+            //msg.file = filename;
+			
+            // Check if cached
+            pathExists(msg.file)
+                .then(cached => {
+                    if (cached) {
+                        // Cached
+                        return node.send([msg, null]);
+                    } else {
+					
+                        // Not cached
+                        node.status({
+                            fill: 'yellow',
+                            shape: 'dot',
+                            text: 'requesting'
+                        });
+
+                        msg._polly.cached = false;
+                        var started = Date.now();
+
+                        var params = {
+                            OutputFormat: outputFormat,
+                            SampleRate: "8000",
+                            Text: text,
+                            TextType: node.ssml ? 'ssml' : 'text',
+                            VoiceId: voiceId
+                        }
+                        Promise.resolve(synthesizeSpeech([polly, params]), reason => {
+                                // Failed the caching the file
+                                notifyError(node, msg, reason);
+                        }).then(data => {
+                            return [msg.file, data.AudioStream];
+                        }).then(cacheSpeech, reason => {
+                            // Failed the caching the file
+                            notifyError(node, msg, reason);
+                        }).then(done => {
+                            // Success
+                            msg._polly.roundtrip = Date.now() - started;
+                            node.status({});
+                            node.send([msg, null]);
+                        });
+                    }
+            });
+        });
+    }
+
+    function synthesizeSpeech([polly, params]){
+        return new Promise((resolve, reject) => {
+            polly.synthesizeSpeech(params, function(err, data) {
+                if (err !== null) return reject(err);
+                    resolve(data);
+                });
+            });
+    }
+
+    function cacheSpeech([path, data]){
+        return new Promise((resolve, reject) => {
+            fs.writeFile(path, data, function(err) {
+                if (err !== null) return reject(err);
+                resolve();
+            });
+        });
+    }
+
+    // function getFilename(text, voice, isSSML, extension) {
+        // // Slug the text.
+        // var basename = slug(text);
+
+        // var ssml_text = isSSML ? "_ssml" : ""
+
+        // // Filename format: "text_voice.mp3"
+        // var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension)
+
+        // // If filename is too long, cut it and add hash
+        // if (filename.length > 255) {
+            // var hash = MD5(basename);
+
+            // // Filename format: "text_hash_voice.mp3"
+            // var ending = util.format('_%s_%s_%s.%s', hash, voice, ssml_text, extension);
+            // var beginning = basename.slice(0, 255 - ending.length);
+
+            // filename = beginning + ending;
+        // }
+
+        // return filename;
+    // }
+
+    RED.nodes.registerType('polly', PollyNode);
+
+    function notifyError(node, msg, err) {
+        node.status({
+            fill: 'red',
+            shape: 'dot',
+            text: 'error'
+        });
+        node.error(RED._(err.message));
+        msg.error = err.message
+        node.send([null, msg]);
+    }
+}
