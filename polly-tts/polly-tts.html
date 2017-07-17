@@ -54,6 +54,12 @@
         <label for="node-input-config"><i class="fa fa-globe"></i> Configuration</label>
         <input type="text" id="node-input-config">
     </div>
+	
+	<div class="form-row node-text-editor-row">
+        <label for="node-input-message-editor"><i class="fa fa-file-code-o"></i> Message</label>
+        <input id="node-input-message" type="hidden">
+        <div style="height: 150px;" class="node-text-editor" id="node-input-message-editor" ></div>
+    </div>
 
     <div class="form-row">
         <label for="node-input-voice"><i class="icon-tag"></i> Voice</label>
@@ -153,6 +159,11 @@
             {
                 value: ""
             },
+			message:
+            {
+                value: "{{payload}}",
+                required: true
+            },
             voice:
             {
                 value: "0",
@@ -165,7 +176,7 @@
             },
             dir:
             {
-                value: "/tmp",
+                value: "/tmp/{{voice_name}}-{{lang}}-{{slug}}.mp3",
                 required: true
             },
             config:
@@ -180,6 +191,26 @@
         label: function()
         {
             return this.name || "polly";
+        },
+        oneditprepare: function() {
+            var that = this;
+            this.editor = RED.editor.createEditor({
+                id:    'node-input-message-editor',
+                mode:  'ace/mode/html',
+                value: $("#node-input-message").val()
+            });
+            RED.library.create({
+                url:    "functions", // where to get the data from
+                type:   "function",  // the type of object the library is for
+                editor: that.editor, // the field name the main text body goes to
+                fields: ['name','outputs']
+            });
+            this.editor.focus();
+
+        },
+        oneditsave: function() {
+            $("#node-input-message").val(this.editor.getValue())
+            delete this.editor;
         }
     });
 </script>
