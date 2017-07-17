@@ -9,6 +9,7 @@ module.exports = function(RED) {
     var util = require('util');
     var path = require('path');
     var pathExists = require('path-exists');
+	var mustache = require("mustache");
 
     AWS.config.update({
         region: 'us-east-1'
@@ -99,7 +100,7 @@ module.exports = function(RED) {
             Id: 'Ines',
             LanguageCode: 'pt-PT',
             LanguageName: 'Portuguese',
-            Name: 'Inês'
+            Name: 'InÃªs'
         },
         '8': {
             Gender: 'Male',
@@ -113,7 +114,7 @@ module.exports = function(RED) {
             Id: 'Vitoria',
             LanguageCode: 'pt-BR',
             LanguageName: 'Brazilian Portuguese',
-            Name: 'Vitória'
+            Name: 'VitÃ³ria'
         },
         '10': {
             Gender: 'Male',
@@ -190,7 +191,7 @@ module.exports = function(RED) {
             Id: 'Dora',
             LanguageCode: 'is-IS',
             LanguageName: 'Icelandic',
-            Name: 'Dóra'
+            Name: 'DÃ³ra'
         },
         '21': {
             Gender: 'Male',
@@ -204,7 +205,7 @@ module.exports = function(RED) {
             Id: 'Celine',
             LanguageCode: 'fr-FR',
             LanguageName: 'French',
-            Name: 'Céline'
+            Name: 'CÃ©line'
         },
         '23': {
             Gender: 'Female',
@@ -218,7 +219,7 @@ module.exports = function(RED) {
             Id: 'Penelope',
             LanguageCode: 'es-US',
             LanguageName: 'US Spanish',
-            Name: 'Penélope'
+            Name: 'PenÃ©lope'
         },
         '25': {
             Gender: 'Male',
@@ -388,7 +389,7 @@ module.exports = function(RED) {
             accessKeyId: this.accessKey,
             secretAccessKey: this.secretKey,
             apiVersion: '2016-06-10'
-        };
+        }
         this.polly = new AWS.Polly(params);
     }
 
@@ -409,10 +410,13 @@ module.exports = function(RED) {
 
 
         this.dir = config.dir;
+        this.message = config.message;
+		//this.voice = config.voice;
+		
         // Try and create directory?
-        if (!isDirSync(this.dir)) {
+        //if (!isDirSync(this.dir)) {
             // If directory does not exist then create it?
-        }
+        //}
 
         // Set the voice
         var voice = voices[config.voice].Id;
@@ -422,7 +426,7 @@ module.exports = function(RED) {
 
         this.config = RED.nodes.getNode(config.config);
         if (!this.config) {
-            this.error(RED._('missing polly config'));
+            this.error(red._('missing polly config'));
             return;
         }
 
@@ -434,66 +438,86 @@ module.exports = function(RED) {
             };
 
             var polly = node.config.polly;
-            var outputFormat = 'mp3';
-
-            var filename = getFilename(msg.payload, voice, node.ssml, outputFormat);
-
+			var OutputFormat = "mp3";
+			
+            //var filename = getFilename(msg.payload, voice, node.ssml, outputFormat)
+            var filename = mustache.render(node.dir, msg).toLowerCase();
+			var text = mustache.render(node.message, msg);
+			
+			msg.slug = slug("" + text);
+			msg.voice_id = slug("" + text);
+			var ref, key, value;
+			ref = voices[node.voice];
+			for (key in ref) {
+				value = ref[key];
+				msg["voice_" + key] = slug(value, '-');
+			}
+			
             // Store it
-            msg.file = path.join(node.dir, filename);
-
+            //msg.file = path.join(node.dir, filename);
+            msg.file = filename;
+			
             // Check if cached
             pathExists(msg.file)
                 .then(cached => {
                     if (cached) {
                         // Cached
                         return node.send([msg, null]);
-                    } 
+						console.log("cached: " + msg.file);
+                    } else {
+					
+						console.log("not cached: " + msg.file);
 
-                    // Not cached
-                    node.status({
-                        fill: 'yellow',
-                        shape: 'dot',
-                        text: 'requesting'
-                    });
+                        // Not cached
+                        node.status({
+                            fill: 'yellow',
+                            shape: 'dot',
+                            text: 'requesting'
+                        });
 
-                    msg._polly.cached = false;
-                    var started = Date.now();
+                        msg._polly.cached = false;
+                        var started = Date.now();
+						
+						console.log("text: " + text);
+						console.log("voice: " + voice);
 
-                    var params = {
-                        OutputFormat: outputFormat,
-                        SampleRate: '8000',
-                        Text: msg.payload,
-                        TextType: node.ssml ? 'ssml' : 'text',
-                        VoiceId: voice
-                    };
-                    Promise.resolve(synthesizeSpeech([polly, params]), reason => {
+                        var params = {
+                            OutputFormat: outputFormat,
+                            SampleRate: "8000",
+                            Text: text,
+                            TextType: node.ssml ? 'ssml' : 'text',
+                            VoiceId: voice
+                        }
+                        Promise.resolve(synthesizeSpeech([polly, params]), reason => {
+                                // Failed the caching the file
+								console.log("1");
+                                notifyError(node, msg, reason);
+                        }).then(data => {
+							console.log("2");
+                            return [msg.file, data.AudioStream];
+                        }).then(cacheSpeech, reason => {
                             // Failed the caching the file
-                        notifyError(node, msg, reason);
-                    }).then(data => {
-                        return [msg.file, data.AudioStream];
-                    }).then(cacheSpeech, reason => {
-                        // Failed the caching the file
-                        notifyError(node, msg, reason);
-                    }).then(function(){
-                        // Success
-                        msg._polly.roundtrip = Date.now() - started;
-                        node.status({});
-                        node.send([msg, null]);
-                    });
-                });
+							console.log("3");
+                            notifyError(node, msg, reason);
+                        }).then(done => {
+                            // Success
+							console.log("4");
+                            msg._polly.roundtrip = Date.now() - started;
+                            node.status({});
+                            node.send([msg, null]);
+                        });
+                    }
+            });
         });
     }
 
     function synthesizeSpeech([polly, params]){
         return new Promise((resolve, reject) => {
             polly.synthesizeSpeech(params, function(err, data) {
-                if (err !== null) {
-                    return reject(err);
-                }
-
-                resolve(data);
+                if (err !== null) return reject(err);
+                    resolve(data);
+                });
             });
-        });
     }
 
     function cacheSpeech([path, data]){
@@ -505,28 +529,28 @@ module.exports = function(RED) {
         });
     }
 
-    function getFilename(text, voice, isSSML, extension) {
-        // Slug the text.
-        var basename = slug(text);
+    // function getFilename(text, voice, isSSML, extension) {
+        // // Slug the text.
+        // var basename = slug(text);
 
-        var ssml_text = isSSML ? '_ssml' : '';
+        // var ssml_text = isSSML ? "_ssml" : ""
 
-        // Filename format: "text_voice.mp3"
-        var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension);
+        // // Filename format: "text_voice.mp3"
+        // var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension)
 
-        // If filename is too long, cut it and add hash
-        if (filename.length > 255) {
-            var hash = MD5(basename);
+        // // If filename is too long, cut it and add hash
+        // if (filename.length > 255) {
+            // var hash = MD5(basename);
 
-            // Filename format: "text_hash_voice.mp3"
-            var ending = util.format('_%s_%s_%s.%s', hash, voice, ssml_text, extension);
-            var beginning = basename.slice(0, 255 - ending.length);
+            // // Filename format: "text_hash_voice.mp3"
+            // var ending = util.format('_%s_%s_%s.%s', hash, voice, ssml_text, extension);
+            // var beginning = basename.slice(0, 255 - ending.length);
 
-            filename = beginning + ending;
-        }
+            // filename = beginning + ending;
+        // }
 
-        return filename;
-    }
+        // return filename;
+    // }
 
     RED.nodes.registerType('polly', PollyNode);
 
@@ -537,7 +561,7 @@ module.exports = function(RED) {
             text: 'error'
         });
         node.error(RED._(err.message));
-        msg.error = err.message;
+        msg.error = err.message
         node.send([null, msg]);
     }
-};
+}
