@@ -32,7 +32,7 @@ module.exports = function(RED) {
                     if (err) {
                         this.error(RED._(err));
                     } else {
-                        console.log('Created directory path: ', aPath);
+                        this.log(RED._('Created directory path: ', aPath));
                     }
                 });
                 return false;
@@ -461,7 +461,7 @@ module.exports = function(RED) {
 
                     var params = {
                         OutputFormat: outputFormat,
-                        SampleRate: '8000',
+                        SampleRate: '22050',
                         Text: msg.payload,
                         TextType: node.ssml ? 'ssml' : 'text',
                         VoiceId: voice
