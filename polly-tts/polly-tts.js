@@ -32,17 +32,17 @@ module.exports = function(RED) {
             // Path does not exist
             if (e.code === 'ENOENT') {
                 // Try and create it
-                mkdirp(aPath, function(err) {
-                    if(!err){
-                        RED.log.info('Created directory path: ', aPath);
-                        return true;
-                    }
-                });
+                try {
+                    mkdirp.sync(aPath);
+                    RED.log.info('Created directory path: ' + aPath);
+                    return true;
+                } catch (e) {
+                    RED.log.error('Failed to create path: ' + aPath);
+                }
             } 
+            // Otherwise failure
+            return false;
         }
-
-        // Otherwise failure
-        return false;
     }
 
     var voices = {
