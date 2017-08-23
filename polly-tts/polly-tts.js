@@ -9,6 +9,7 @@ module.exports = function(RED) {
     var util = require('util');
     var path = require('path');
     var pathExists = require('path-exists');
+    var _ = require('lodash');
 
     AWS.config.update({
         region: 'us-east-1'
@@ -23,25 +24,25 @@ module.exports = function(RED) {
     slug.charmap['<'] = '_less_';
     slug.charmap['>'] = '_greater_';
 
-    function isDirSync(aPath) {
+    function setupDirectory(aPath) {
         try {
             return fs.statSync(aPath).isDirectory();
         } catch (e) {
+
+            // Path does not exist
             if (e.code === 'ENOENT') {
+                // Try and create it
                 mkdirp(aPath, function(err) {
-                    if (err) {
-                        this.error(RED._(err));
-                    } else {
-                        this.log(RED._('Created directory path: ', aPath));
+                    if(!err){
+                        RED.log.info('Created directory path: ', aPath);
+                        return true;
                     }
                 });
-                return false;
-            } else if (e.code === 'EACCES') {
-                return false;
-            } else {
-                throw e;
-            }
+            } 
         }
+
+        // Otherwise failure
+        return false;
     }
 
     var voices = {
@@ -379,6 +380,8 @@ module.exports = function(RED) {
     function PollyConfigNode(config) {
         RED.nodes.createNode(this, config);
 
+        RED.log.log('ConfigNode:' + config);
+
         if (this.credentials) {
             this.accessKey = this.credentials.accessKey;
             this.secretKey = this.credentials.secretKey;
@@ -389,7 +392,9 @@ module.exports = function(RED) {
             secretAccessKey: this.secretKey,
             apiVersion: '2016-06-10'
         };
+        RED.log.info('Polly: ' + this.polly);
         this.polly = new AWS.Polly(params);
+        RED.log.info('Polly: ' + this.polly);
     }
 
     RED.nodes.registerType('polly-config', PollyConfigNode, {
@@ -407,12 +412,7 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, config);
         var node = this;
 
-
         this.dir = config.dir;
-        // Try and create directory?
-        if (!isDirSync(this.dir)) {
-            // If directory does not exist then create it?
-        }
 
         // Set the voice
         var voice = voices[config.voice].Id;
@@ -422,11 +422,15 @@ module.exports = function(RED) {
 
         this.config = RED.nodes.getNode(config.config);
         if (!this.config) {
-            this.error(RED._('missing polly config'));
+            RED.log.error('Missing polly config');
             return;
         }
 
         this.on('input', function(msg) {
+            if(!_.isString(msg.payload)){
+                notifyError(node, msg, 'msg.payload must be of type String');
+                return;
+            }
 
             msg._polly = {
                 cached: true,
@@ -438,8 +442,15 @@ module.exports = function(RED) {
 
             var filename = getFilename(msg.payload, voice, node.ssml, outputFormat);
 
+            var cacheDir = _.get(msg, 'options.dir') || node.dir;
+
+            if (!setupDirectory(cacheDir)) {
+                notifyError(node, msg, 'Unable to set up cache directory: ' + cacheDir);
+                return;
+            }
+
             // Store it
-            msg.file = path.join(node.dir, filename);
+            msg.file = path.join(cacheDir, filename);
 
             // Check if cached
             pathExists(msg.file)
@@ -466,20 +477,20 @@ module.exports = function(RED) {
                         TextType: node.ssml ? 'ssml' : 'text',
                         VoiceId: voice
                     };
-                    Promise.resolve(synthesizeSpeech([polly, params]), reason => {
-                            // Failed the caching the file
-                        notifyError(node, msg, reason);
-                    }).then(data => {
-                        return [msg.file, data.AudioStream];
-                    }).then(cacheSpeech, reason => {
-                        // Failed the caching the file
-                        notifyError(node, msg, reason);
-                    }).then(function(){
-                        // Success
-                        msg._polly.roundtrip = Date.now() - started;
-                        node.status({});
-                        node.send([msg, null]);
-                    });
+
+                    synthesizeSpeech([polly, params])
+                        .then(data => {
+                            return [msg.file, data.AudioStream];
+                        })
+                        .then(cacheSpeech)
+                        .then(function() {
+                            // Success
+                            msg._polly.roundtrip = Date.now() - started;
+                            node.status({});
+                            node.send([msg, null]);
+                        }).catch(error => {
+                            notifyError(node, msg, error);
+                        });
                 });
         });
     }
@@ -519,7 +530,7 @@ module.exports = function(RED) {
             var hash = MD5(basename);
 
             // Filename format: "text_hash_voice.mp3"
-            var ending = util.format('_%s_%s_%s.%s', hash, voice, ssml_text, extension);
+            var ending = util.format('_%s_%s%s.%s', hash, voice, ssml_text, extension);
             var beginning = basename.slice(0, 255 - ending.length);
 
             filename = beginning + ending;
@@ -531,13 +542,20 @@ module.exports = function(RED) {
     RED.nodes.registerType('polly', PollyNode);
 
     function notifyError(node, msg, err) {
+        var errorMessage = _.isString(err) ? err : err.message;
+        // Output error to console
+        RED.log.error(errorMessage);
+        // Mark node as errounous
         node.status({
             fill: 'red',
             shape: 'dot',
-            text: 'error'
+            text: 'Error: ' + errorMessage
         });
-        node.error(RED._(err.message));
-        msg.error = err.message;
+
+        // Set error in message
+        msg.error = errorMessage;
+        
+        // Send message
         node.send([null, msg]);
     }
 };

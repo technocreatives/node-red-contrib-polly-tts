@@ -124,18 +124,22 @@
         <a href="https://aws.amazon.com/polly/">Polly</a> TTS api node.
     </p>
     <p>
-        <pre>msg.payload</pre> will be converted to an mp3 file and stored to file
-        system. The file path is indicated at <pre>msg.file</pre>
+    A string provided in <code>msg.payload</code> will be synthesized to speech in the format of a mp3 file and stored to filesystem in the directory of <code>Cache dir</code> (Configured in the configuration node). The <code>Cache dir</code> can also be overridden by setting the <code>msg.options.dir</code>. If the path is overridden it will also look in the same path for cached files, thus not looking in the directory set in the configuration node.
+    /p>
+    
+    <p>
+        Once the text has been synthesized and the file has been cached the node willl send out a message and indicate the path to the file in <code>msg.file</code>
+    </p>
+
+    <p>
+        If the <code>msg.payload</code> has already been converted, no query to the polly server will be made, instead the path to the cached file will be returned.
     </p>
     <p>
-        If the <pre>msg.payload</pre> has already been converted, no rountrip to
-        Polly server will be made.
-    </p>
-    <p>
-        The <pre>msg._polly</pre> objects contains aditional information about
+        The <code>msg._polly</code> objects contains aditional information about
         the operation.
+    
         <ul style="font-size: 12px;">
-            <li><i>cached</i> - true if no roundtrip was performed, false otherwise.</li>
+            <li><i>cached</i> - true if the speech already was cached, false otherwise.</li>
             <li><i>roundtrip</i> - The time in ms for the server request.</li>
         </ul>
     </p>
