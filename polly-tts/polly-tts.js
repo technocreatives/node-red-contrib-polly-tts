@@ -526,7 +526,7 @@ module.exports = function(RED) {
         var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension);
 
         // If filename is too long, cut it and add hash
-        if (filename.length > 255) {
+        if (filename.length > 250) {
             var hash = MD5(basename);
 
             // Filename format: "text_hash_voice.mp3"
