@@ -531,7 +531,7 @@ module.exports = function(RED) {
 
             // Filename format: "text_hash_voice.mp3"
             var ending = util.format('_%s_%s%s.%s', hash, voice, ssml_text, extension);
-            var beginning = basename.slice(0, 255 - ending.length);
+            var beginning = basename.slice(0, 250 - ending.length);
 
             filename = beginning + ending;
         }
