@@ -374,6 +374,13 @@ module.exports = function(RED) {
             LanguageCode: 'pl-PL',
             LanguageName: 'Polish',
             Name: 'Jacek'
+        },
+        '47': {
+            Gender: 'Male',
+            Id: 'Matthew',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Matthew'
         }
     };
 
