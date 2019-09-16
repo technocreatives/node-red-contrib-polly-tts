@@ -422,7 +422,7 @@ module.exports = function(RED) {
         this.dir = config.dir;
 
         // Set the voice
-        var voice = voices[config.voice].Id;
+        var defaultVoice = voices[config.voice].Id;
 
         // Set ssml
         this.ssml = config.ssml;
@@ -443,6 +443,11 @@ module.exports = function(RED) {
                 cached: true,
                 roundtrip: 0
             };
+            var voice = defaultVoice
+
+            if(Object.values(voices).map(obj => {return obj.Id}).includes(msg.voice)) {
+                voice = msg.voice
+            }
 
             var polly = node.config.polly;
             var outputFormat = 'mp3';
