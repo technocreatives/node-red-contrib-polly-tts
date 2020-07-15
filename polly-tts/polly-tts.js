@@ -614,7 +614,7 @@ module.exports = function(RED) {
             var polly = node.config.polly;
             var outputFormat = 'mp3';
 
-            var filename = getFilename(msg.payload, voice, node.ssml, outputFormat);
+            var filename = getFilename(msg.payload, voice, engine, node.ssml, outputFormat);
 
             var cacheDir = _.get(msg, 'options.dir') || node.dir;
 
@@ -690,21 +690,21 @@ module.exports = function(RED) {
         });
     }
 
-    function getFilename(text, voice, isSSML, extension) {
+    function getFilename(text, voice, engine, isSSML, extension) {
         // Slug the text.
         var basename = slug(text);
 
         var ssml_text = isSSML ? '_ssml' : '';
 
-        // Filename format: "text_voice.mp3"
-        var filename = util.format('%s_%s%s.%s', basename, voice, ssml_text, extension);
+        // Filename format: "text_voice-engine.mp3"
+        var filename = util.format('%s_%s-%s%s.%s', basename, voice, engine, ssml_text, extension);
 
         // If filename is too long, cut it and add hash
         if (filename.length > 250) {
             var hash = MD5(basename);
 
-            // Filename format: "text_hash_voice.mp3"
-            var ending = util.format('_%s_%s%s.%s', hash, voice, ssml_text, extension);
+            // Filename format: "text_hash_voice-engine.mp3"
+            var ending = util.format('_%s_%s-%s%s.%s', hash, voice, engine, ssml_text, extension);
             var beginning = basename.slice(0, 250 - ending.length);
 
             filename = beginning + ending;
