@@ -437,6 +437,110 @@ module.exports = function(RED) {
             LanguageName: 'US English',
             Name: 'Matthew (neural)',
             Engine: 'neural'
+		},
+        '49': {
+            Gender: 'Female',
+            Id: 'Amy',
+            LanguageCode: 'en-GB',
+            LanguageName: 'British English',
+            Name: 'Amy (neural)',
+            Engine: 'neural'
+		},
+        '50': {
+            Gender: 'Female',
+            Id: 'Emma',
+            LanguageCode: 'en-GB',
+            LanguageName: 'British English',
+            Name: 'Emma (neural)',
+            Engine: 'neural'
+		},
+        '51': {
+            Gender: 'Male',
+            Id: 'Brian',
+            LanguageCode: 'en-GB',
+            LanguageName: 'British English',
+            Name: 'Brian (neural)',
+            Engine: 'neural'
+		},
+        '52': {
+            Gender: 'Female',
+            Id: 'Ivy',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Ivy (neural)',
+            Engine: 'neural'
+		},
+        '53': {
+            Gender: 'Female',
+            Id: 'Joanna',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Joanna (neural)',
+            Engine: 'neural'
+		},
+        '54': {
+            Gender: 'Female',
+            Id: 'Kendra',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Kendra (neural)',
+            Engine: 'neural'
+		},
+        '55': {
+            Gender: 'Female',
+            Id: 'Kimberly',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Kimberly (neural)',
+            Engine: 'neural'
+		},
+        '56': {
+            Gender: 'Female',
+            Id: 'Salli',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Salli (neural)',
+            Engine: 'neural'
+		},
+        '57': {
+            Gender: 'Male',
+            Id: 'Joey',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Joey (neural)',
+            Engine: 'neural'
+		},
+        '58': {
+            Gender: 'Male',
+            Id: 'Justin',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Justin (neural)',
+            Engine: 'neural'
+		},
+        '59': {
+            Gender: 'Male',
+            Id: 'Kevin',
+            LanguageCode: 'en-US',
+            LanguageName: 'US English',
+            Name: 'Kevin (neural)',
+            Engine: 'neural'
+		},
+        '60': {
+            Gender: 'Female',
+            Id: 'Camila',
+            LanguageCode: 'pt-BR',
+            LanguageName: 'Brazilian Portuguese',
+            Name: 'Camila (neural)',
+            Engine: 'neural'
+		},
+        '61': {
+            Gender: 'Female',
+            Id: 'Lupe',
+            LanguageCode: 'es-US',
+            LanguageName: 'US Spanish',
+            Name: 'Lupe (neural)',
+            Engine: 'neural'
 		}
     };
 
