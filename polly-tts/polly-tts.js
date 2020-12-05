@@ -541,6 +541,86 @@ module.exports = function(RED) {
             LanguageName: 'US Spanish',
             Name: 'Lupe (neural)',
             Engine: 'neural'
+		},
+        '62': {
+            Gender: 'Female',
+            Id: 'Vicki',
+            LanguageCode: 'de-DE',
+            LanguageName: 'German',
+            Name: 'Vicki',
+            Engine: 'standard'
+		},
+        '63': {
+            Gender: 'Female',
+            Id: 'Aditi',
+            LanguageCode: 'hi-IN',
+            LanguageName: 'Hindi',
+            Name: 'Aditi',
+            Engine: 'standard'
+		},
+        '64': {
+            Gender: 'Female',
+            Id: 'Aditi',
+            LanguageCode: 'en-IN',
+            LanguageName: 'English',
+            Name: 'Aditi',
+            Engine: 'standard'
+		},
+        '65': {
+            Gender: 'Female',
+            Id: 'Bianca',
+            LanguageCode: 'it-IT',
+            LanguageName: 'Italian',
+            Name: 'Bianca',
+            Engine: 'standard'
+		},
+        '66': {
+            Gender: 'Female',
+            Id: 'Lucia',
+            LanguageCode: 'es-ES',
+            LanguageName: 'Spanish',
+            Name: 'Lucia',
+            Engine: 'standard'
+		},
+        '67': {
+            Gender: 'Female',
+            Id: 'Mia',
+            LanguageCode: 'es-MX',
+            LanguageName: 'Spanish Mexican',
+            Name: 'Mia',
+            Engine: 'standard'
+		},
+        '68': {
+            Gender: 'Female',
+            Id: 'Seoyeon',
+            LanguageCode: 'ko-KR',
+            LanguageName: 'Korean',
+            Name: 'Seoyeon',
+            Engine: 'standard'
+		},
+        '69': {
+            Gender: 'Male',
+            Id: 'Takumi',
+            LanguageCode: 'ja-JP',
+            LanguageName: 'Japanese',
+            Name: 'Takumi',
+            Engine: 'standard'
+		},
+        '70': {
+            Gender: 'Female',
+            Id: 'Zeina',
+            LanguageCode: 'arb',
+            LanguageName: 'Arabic',
+            Name: 'Zeina',
+            Engine: 'standard'
+		},
+        '71': {
+            Gender: 'Female',
+            Id: 'Zhiyu',
+            LanguageCode: 'cmn-CN',
+            LanguageName: 'Chinese, Mandarin',
+            Name: 'Zhiyu',
+            Engine: 'standard'
 		}
     };
 
