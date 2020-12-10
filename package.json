@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-polly-tts",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -37,7 +37,7 @@
     "eslint": "^6.4.0",
     "eslint-config-google": "^0.7.1"
   },
-  "engines" : { 
-    "node" : ">=6.11.2" 
+  "engines": {
+    "node": ">=6.11.2"
   }
 }
