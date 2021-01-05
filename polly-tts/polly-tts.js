@@ -500,7 +500,7 @@ module.exports = function(RED) {
             LanguageCode: 'en-US',
             LanguageName: 'US English',
             Name: 'Salli (neural)',
-            Engine: 'neural'
+	    Engine: 'neural'
 		},
         '57': {
             Gender: 'Male',
@@ -621,6 +621,14 @@ module.exports = function(RED) {
             LanguageName: 'Chinese, Mandarin',
             Name: 'Zhiyu',
             Engine: 'standard'
+		},
+	'72': {
+	    Gender: 'Female',
+	    Id: 'Olivia',
+	    LanguageCode: 'en-AU',
+	    LanguageName: 'Australian English',
+	    Name: 'Olivia (neural)',
+	    Engine: 'neural'
 		}
     };
 
@@ -663,6 +671,7 @@ module.exports = function(RED) {
 
         // Set the voice
         var defaultVoice = voices[config.voice].Id;
+	var engine = voices[config.voice].Engine
 
         // Set ssml
         this.ssml = config.ssml;
@@ -685,12 +694,12 @@ module.exports = function(RED) {
             };
             var voice = defaultVoice
 
-            if(Object.values(voices).map(obj => {return obj.Id}).includes(msg.voice)) {
-                voice = msg.voice
-            }
-
-            var engine = voices[config.voice].Engine
-
+	    var voiceIndex = Object.values(voices).findIndex(obj => {return obj.Name === msg.voice})
+	    if(voiceIndex > -1) {
+		voice = voices[voiceIndex].Id
+		engine = voices[voiceIndex].Engine
+	    }
+	    
             var polly = node.config.polly;
             var outputFormat = 'mp3';
 
