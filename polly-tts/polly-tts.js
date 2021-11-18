@@ -702,7 +702,7 @@ module.exports = function(RED) {
             Name: 'Seoyeon (neural)',
             Engine: 'neural'
 		},
-        '62': {
+        '82': {
             Gender: 'Female',
             Id: 'Vicki',
             LanguageCode: 'de-DE',
