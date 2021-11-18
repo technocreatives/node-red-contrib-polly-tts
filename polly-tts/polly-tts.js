@@ -751,6 +751,7 @@ module.exports = function(RED) {
 
         // Set the voice
         var defaultVoice = voices[config.voice].Id;
+        var engine = voices[config.voice].Engine
 
         // Set ssml
         this.ssml = config.ssml;
@@ -773,11 +774,12 @@ module.exports = function(RED) {
             };
             var voice = defaultVoice
 
-            if(Object.values(voices).map(obj => {return obj.Id}).includes(msg.voice)) {
-                voice = msg.voice
-            }
+            var voiceIndex = Object.values(voices).findIndex(obj => {return obj.Name === msg.voice})
+      	    if(voiceIndex > -1) {
+             		voice = voices[voiceIndex].Id
+            		engine = voices[voiceIndex].Engine
+	          }
 
-            var engine = voices[config.voice].Engine
 
             var polly = node.config.polly;
             var outputFormat = 'mp3';
@@ -896,7 +898,7 @@ module.exports = function(RED) {
 
         // Set error in message
         msg.error = errorMessage;
-        
+
         // Send message
         node.send([null, msg]);
     }

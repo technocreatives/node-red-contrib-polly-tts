@@ -162,7 +162,7 @@
     <p>
     A string provided in <code>msg.payload</code> will be synthesized to speech in the format of a mp3 file and stored to filesystem in the directory of <code>Cache dir</code> (Configured in the configuration node). The <code>Cache dir</code> can also be overridden by setting the <code>msg.options.dir</code>. If the path is overridden it will also look in the same path for cached files, thus not looking in the directory set in the configuration node.
     /p>
-    
+
     <p>
         Once the text has been synthesized and the file has been cached the node willl send out a message and indicate the path to the file in <code>msg.file</code>
     </p>
@@ -172,13 +172,13 @@
     </p>
 
     <p>
-        The voice can be specified by setting <code>msg.voice</code> to e.g. <i>Joanna</i> or <i>Enrique</i>.
+       	The voice can be specified by setting <code>msg.voice</code> to e.g. <i>Joanna</i> or <i>Enrique</i>.  For neural voices use the name followed by '(neural)', e.g. <i>Ivy (neural)</i> or <i>Matthew (neural)</i>
     </p>
 
     <p>
         The <code>msg._polly</code> objects contains aditional information about
         the operation.
-    
+
         <ul style="font-size: 12px;">
             <li><i>cached</i> - true if the speech already was cached, false otherwise.</li>
             <li><i>roundtrip</i> - The time in ms for the server request.</li>
