@@ -621,6 +621,94 @@ module.exports = function(RED) {
             LanguageName: 'Chinese, Mandarin',
             Name: 'Zhiyu',
             Engine: 'standard'
+		},
+        '72': {
+            Gender: 'Female',
+            Id: 'Camila',
+            LanguageCode: 'pt-BR',
+            LanguageName: 'Brazilian Portuguese',
+            Name: 'Camila',
+            Engine: 'standard'
+		},
+        '73': {
+            Gender: 'Female',
+            Id: 'Lea',
+            LanguageCode: 'fr-FR',
+            LanguageName: 'French',
+            Name: 'Léa',
+            Engine: 'standard'
+        },
+        '74': {
+            Gender: 'Female',
+            Id: 'Lupe',
+            LanguageCode: 'es-US',
+            LanguageName: 'US Spanish',
+            Name: 'Lupe',
+            Engine: 'standard'
+		},
+        '75': {
+            Gender: 'Female',
+            Id: 'Aria',
+            LanguageCode: 'en-NZ',
+            LanguageName: 'New Zealand English',
+            Name: 'Aria (neural)',
+            Engine: 'neural'
+		},
+        '76': {
+            Gender: 'Female',
+            Id: 'Ayanda',
+            LanguageCode: 'en-ZA',
+            LanguageName: 'South African English',
+            Name: 'Ayanda (neural)',
+            Engine: 'neural'
+		},
+        '77': {
+            Gender: 'Female',
+            Id: 'Bianca',
+            LanguageCode: 'it-IT',
+            LanguageName: 'Italian',
+            Name: 'Bianca (neural)',
+            Engine: 'neural'
+		},
+        '78': {
+            Gender: 'Female',
+            Id: 'Gabrielle',
+            LanguageCode: 'fr-CA',
+            LanguageName: 'Canadian French',
+            Name: 'Gabrielle (neural)',
+            Engine: 'neural'
+        },
+        '79': {
+            Gender: 'Female',
+            Id: 'Lucia',
+            LanguageCode: 'es-ES',
+            LanguageName: 'Spanish',
+            Name: 'Lucia (neural)',
+            Engine: 'neural'
+		},
+        '80': {
+            Gender: 'Female',
+            Id: 'Olivia',
+            LanguageCode: 'en-AU',
+            LanguageName: 'Australian English',
+            Name: 'Olivia (neural)',
+            Engine: 'neural'
+        },
+        '81': {
+            Gender: 'Female',
+            Id: 'Seoyeon',
+            LanguageCode: 'ko-KR',
+            LanguageName: 'Korean',
+            Name: 'Seoyeon (neural)',
+            Engine: 'neural'
+		},
+        '62': {
+            Gender: 'Female',
+            Id: 'Vicki',
+            LanguageCode: 'de-DE',
+            LanguageName: 'German',
+            Name: 'Vicki (neural)',
+            Engine: 'neural'
 		}
     };
 
