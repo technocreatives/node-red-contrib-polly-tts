@@ -624,12 +624,12 @@ module.exports = function(RED) {
 		},
         '72': {
             Gender: 'Female',
-            Id: 'Camila',
-            LanguageCode: 'pt-BR',
-            LanguageName: 'Brazilian Portuguese',
-            Name: 'Camila',
-            Engine: 'standard'
-		},
+            Id: 'Olivia',
+            LanguageCode: 'en-AU',
+            LanguageName: 'Australian English',
+            Name: 'Olivia (neural)',
+            Engine: 'neural'
+        },
         '73': {
             Gender: 'Female',
             Id: 'Lea',
@@ -688,12 +688,12 @@ module.exports = function(RED) {
 		},
         '80': {
             Gender: 'Female',
-            Id: 'Olivia',
-            LanguageCode: 'en-AU',
-            LanguageName: 'Australian English',
-            Name: 'Olivia (neural)',
-            Engine: 'neural'
-        },
+            Id: 'Camila',
+            LanguageCode: 'pt-BR',
+            LanguageName: 'Brazilian Portuguese',
+            Name: 'Camila',
+            Engine: 'standard'
+		},
         '81': {
             Gender: 'Female',
             Id: 'Seoyeon',
